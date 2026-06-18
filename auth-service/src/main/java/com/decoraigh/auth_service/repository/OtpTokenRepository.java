@@ -1,0 +1,12 @@
+package com.decoraigh.auth_service.repository;
+
+import com.decoraigh.auth_service.model.OtpToken;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.Optional;
+
+@Repository
+public interface OtpTokenRepository extends JpaRepository<OtpToken, Long>{
+    Optional<OtpToken> findByEmailAndOtpAndUsedFalse(String email, String otp);
+    void deleteByEmail(String email);
+}
