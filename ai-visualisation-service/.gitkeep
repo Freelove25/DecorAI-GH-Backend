@@ -1,1 +1,35 @@
- 
+ // DecorationRequest.java
+
+package com.decorai.visualisation.dto;
+
+import
+org.springframework.web.multipart.MultipartFile;
+
+public class DecorationRequest {
+    private MultipartFile spacePhoto; // Matches
+FR-07
+    private String eventType;         // Matches
+FR-08 (e.g., wedding, funeral)
+    private String stylePreference;  // Matches FR-08
+(e.g., modern, luxury)
+    private String customPrompt;      // Matches
+FR-10
+
+    // Getters and Setters
+    public MultipartFile getSpacePhoto() { return
+spacePhoto; }
+    public void setSpacePhoto(MultipartFile
+spacePhoto) { this.spacePhoto = spacePhoto; }
+
+    public String getEventType() { return
+eventType; }
+    public void setEventType(String eventType)
+{ this.eventType = eventType; }
+
+    public String getStylePreference() { return
+stylePreference; }
+    public void setStylePreference(String
+stylePreference) { this.stylePreference =
+stylePreference; }
+
+
