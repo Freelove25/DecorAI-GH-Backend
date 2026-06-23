@@ -1,4 +1,4 @@
- // DecorationRequest.java
+ // DecorationRequest
 
 package com.decorai.visualisation.dto;
 
@@ -32,4 +32,94 @@ stylePreference; }
 stylePreference) { this.stylePreference =
 stylePreference; }
 
+//DecorationResponse
+package com.decorai.visualisation.dto;
 
+import java.util.List;
+
+public class DecorationResponse {
+    private List<String> previewImageUrls; // Handles up to three style variants (FR-12)
+    private List<String> identifiedItems; // Identified items like flowers, drapes (FR-14)
+
+    public DecorationResponse(List<String> previewImageUrls, List<String> identifiedItems) {
+        this.previewImageUrls = previewImageUrls;
+        this.identifiedItems = identifiedItems;
+    }
+
+    // Getters and Setters
+    public List<String> getPreviewImageUrls() { return previewImageUrls; }
+    public void setPreviewImageUrls(List<String> previewImageUrls) { this.previewImageUrls = previewImageUrls; }
+
+    public List<String> getIdentifiedItems() { return identifiedItems; }
+    public void setIdentifiedItems(List<String> identifiedItems) { this.identifiedItems = identifiedItems;}
+}
+
+//aiVisualizationController layer
+package com.decorai.visualisation.controller;
+
+import com.decorai.visualisation.dto.DecorationRequest;
+import com.decorai.visualisation.dto.DecorationResponse;
+import com.decorai.visualisation.service.AiVisualisationService;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/visualisation")
+public class AiVisualisationController {
+
+    private final AiVisualisationService visualisationService;
+
+    public AiVisualisationController(AiVisualisationService visualisationService) {
+        this.visualisationService = visualisationService;
+    }
+
+    @PostMapping(value = "/generate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+     public ResponseEntity<DecorationResponse> generateDecorationPreview(
+            @ModelAttribute DecorationRequest request) {
+
+        // Triggers the background generation process through the API Gateway
+        DecorationResponse response = visualisationService.processDecorationBrief(request);
+        return ResponseEntity.ok(response);
+    }
+}
+
+//AIVisualizationService layer
+package com.decorai.visualisation.service;
+
+import com.decorai.visualisation.dto.DecorationRequest;
+import com.decorai.visualisation.dto.DecorationResponse;
+
+public interface AiVisualisationService {
+    DecorationResponse processDecorationBrief(DecorationRequest request);
+}
+
+
+//aiVisualizationServicelmpl
+package com.decorai.visualisation.service.impl;
+
+import com.decorai.visualisation.dto.DecorationRequest;
+import com.decorai.visualisation.dto.DecorationResponse;
+import com.decorai.visualisation.service.AiVisualisationService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class AiVisualisationServiceImpl implements AiVisualisationService {
+
+    private final RestTemplate restTemplate;
+
+    @Value("${ai.claude.api-url}")
+    private String claudeApiUrl;
+
+    @Value("${ai.claude.api-key}")
+    private String claudeApiKey;
+
+    @Value("${ai.replicate.api}")
+
+     
