@@ -31,6 +31,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
+        // Allow public routes without JWT
         if (PUBLIC_ROUTES.stream().anyMatch(path::startsWith)) {
             filterChain.doFilter(request, response);
             return;
