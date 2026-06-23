@@ -1,1 +1,355 @@
- 
+ // DecorationRequest
+
+package com.decorai.visualisation.dto;
+
+import
+org.springframework.web.multipart.MultipartFile;
+
+public class DecorationRequest {
+    private MultipartFile spacePhoto; // Matches
+FR-07
+    private String eventType;         // Matches
+FR-08 (e.g., wedding, funeral)
+    private String stylePreference;  // Matches FR-08
+(e.g., modern, luxury)
+    private String customPrompt;      // Matches
+FR-10
+
+    // Getters and Setters
+    public MultipartFile getSpacePhoto() { return
+spacePhoto; }
+    public void setSpacePhoto(MultipartFile
+spacePhoto) { this.spacePhoto = spacePhoto; }
+
+    public String getEventType() { return
+eventType; }
+    public void setEventType(String eventType)
+{ this.eventType = eventType; }
+
+    public String getStylePreference() { return
+stylePreference; }
+    public void setStylePreference(String
+stylePreference) { this.stylePreference =
+stylePreference; }
+
+//DecorationResponse
+package com.decorai.visualisation.dto;
+
+import java.util.List;
+
+public class DecorationResponse {
+    private List<String> previewImageUrls; // Handles up to three style variants (FR-12)
+    private List<String> identifiedItems; // Identified items like flowers, drapes (FR-14)
+
+    public DecorationResponse(List<String> previewImageUrls, List<String> identifiedItems) {
+        this.previewImageUrls = previewImageUrls;
+        this.identifiedItems = identifiedItems;
+    }
+
+    // Getters and Setters
+    public List<String> getPreviewImageUrls() { return previewImageUrls; }
+    public void setPreviewImageUrls(List<String> previewImageUrls) { this.previewImageUrls = previewImageUrls; }
+
+    public List<String> getIdentifiedItems() { return identifiedItems; }
+    public void setIdentifiedItems(List<String> identifiedItems) { this.identifiedItems = identifiedItems;}
+}
+
+//aiVisualizationController layer
+package com.decorai.visualisation.controller;
+
+import com.decorai.visualisation.dto.DecorationRequest;
+import com.decorai.visualisation.dto.DecorationResponse;
+import com.decorai.visualisation.service.AiVisualisationService;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/visualisation")
+public class AiVisualisationController {
+
+    private final AiVisualisationService visualisationService;
+
+    public AiVisualisationController(AiVisualisationService visualisationService) {
+        this.visualisationService = visualisationService;
+    }
+
+    @PostMapping(value = "/generate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+     public ResponseEntity<DecorationResponse> generateDecorationPreview(
+            @ModelAttribute DecorationRequest request) {
+
+        // Triggers the background generation process through the API Gateway
+        DecorationResponse response = visualisationService.processDecorationBrief(request);
+        return ResponseEntity.ok(response);
+    }
+}
+
+//AIVisualizationService layer
+package com.decorai.visualisation.service;
+
+import com.decorai.visualisation.dto.DecorationRequest;
+import com.decorai.visualisation.dto.DecorationResponse;
+
+public interface AiVisualisationService {
+    DecorationResponse processDecorationBrief(DecorationRequest request);
+}
+
+
+//aiVisualizationServicelmpl
+package com.decorai.visualisation.service.impl;
+
+import com.decorai.visualisation.dto.DecorationRequest;
+import com.decorai.visualisation.dto.DecorationResponse;
+import com.decorai.visualisation.service.AiVisualisationService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class AiVisualisationServiceImpl implements AiVisualisationService {
+
+    private final RestTemplate restTemplate;
+
+    @Value("${ai.claude.api-url}")
+    private String claudeApiUrl;
+
+    @Value("${ai.claude.api-key}")
+    private String claudeApiKey;
+
+    @Value("${ai.replicate.api}")
+
+//Client Registration dto
+package com.decorai.visualisation.dto;
+
+public class ClientRegistrationRequest {
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private String location;
+    private String password;
+
+    // Getters and Setters
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+}
+
+//Client Registration Implementatio
+package com.decorai.visualisation.service.impl;
+
+import com.decorai.visualisation.dto.ClientRegistrationRequest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+@Service
+public class ClientRegistrationServiceImpl {
+
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    public boolean registerClient(ClientRegistrationRequest request, Connection connection) throws SQLException {
+        String sql = "INSERT INTO clients (name, email, phone_number, location, password_hash, role) VALUES (?, ?, ?, ?, ?, ?)";
+        
+        // NFR-04: Secure password hashing using BCrypt
+        String hashedPassword = passwordEncoder.encode(request.getPassword());
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, request.getName());
+            statement.setString(2, request.getEmail());
+            statement.setString(3, request.getPhoneNumber());
+            statement.setString(4, request.getLocation());
+            statement.setString(5, hashedPassword);
+            statement.setString(6, "CLIENT"); // FR-05 Role Enforcement
+
+            int rowsInserted = statement.executeUpdate();
+            return rowsInserted > 0;
+        }
+    }
+}
+
+//AI Sourcing Service
+package com.decorai.visualisation.service.impl;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+@Service
+public class SourcingGuidanceServiceImpl {
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${ai.claude.api-url}")
+    private String claudeApiUrl;
+
+    @Value("${ai.claude.api-key}")
+    private String claudeApiKey;
+
+    /**
+     * FR-17: Generates alternative execution plans for hard-to-source decor items.
+     * NFR-01: Guarantees request termination or fallback within SLA boundaries.
+     */
+    public String getHowToSourceGuidance(String itemDescription) {
+        try {
+            // Enforce performance service SLAs asynchronously via time-bounded futures
+            return CompletableFuture.supplyAsync(() -> fetchGuidanceFromClaude(itemDescription))
+                    .get(8500, TimeUnit.MILLISECONDS); // Hard stop at 8.5s to preserve gateway roundtrip buffers
+                    
+        } catch (TimeoutException e) {
+            // NFR-01 Fallback handling gracefully avoiding catastrophic system stalls
+            return "Sourcing advice is temporarily taking longer to compile. " +
+                   "Tip: Try local crafting alternatives or sourcing raw materials at Makola or Kejetia markets.";
+        } catch (Exception e) {
+            return "Unable to fetch automated guidance at this moment. Please consult your assigned local decorator.";
+        }
+    }
+
+    private String fetchGuidanceFromClaude(String itemDescription) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("x-api-key", claudeApiKey);
+        headers.set("anthropic-version", "2023-06-01");
+
+        // Construct context-aware prompt customized for the Ghanaian market landscape
+        String systemPrompt = "You are an expert interior decorator in Ghana. Provide explicit DIY instructions, " +
+                "local substitute raw fabrics/materials, or importation pipelines for items difficult to purchase off-the-shelf.";
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", "claude-3-5-sonnet-20241022");
+        requestBody.put("max_tokens", 500);
+        requestBody.put("system", systemPrompt);
+        requestBody.put("messages", new Object[]{
+            Map.of("role", "user", "content", "How can I source or recreate this item in Ghana: " + itemDescription)
+        });
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+        ResponseEntity<Map> response = restTemplate.postForEntity(claudeApiUrl, entity, Map.class);
+
+        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            try {
+                // Parsing content payload from Anthropic API signature schema
+                java.util.List<?> content = (java.util.List<?>) response.getBody().get("content");
+                Map<?, ?> textMap = (Map<?, ?>) content.get(0);
+                return (String) textMap.get("text");
+            } catch (Exception e) {
+                return "Failed to parse sourcing metadata blueprint.";
+            }
+        }
+        return "No explicit sourcing matches found from international or local providers.";
+    }
+}
+
+//Optimized AiVisualisationServiceImpl for NFR-01
+package com.decorai.visualisation.service.impl;
+
+import com.decorai.visualisation.dto.DecorationRequest;
+import com.decorai.visualisation.dto.DecorationResponse;
+import com.decorai.visualisation.service.AiVisualisationService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
+@Service
+public class AiVisualisationServiceImpl implements AiVisualisationService {
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${ai.claude.api-url}")
+    private String claudeApiUrl;
+
+    @Value("${ai.claude.api-key}")
+    private String claudeApiKey;
+
+    @Value("${ai.replicate.api-url}")
+    private String replicateApiUrl;
+
+    @Value("${ai.replicate.api-key}")
+    private String replicateApiKey;
+
+    @Override
+    public DecorationResponse processDecorationBrief(DecorationRequest request) {
+        
+        // NFR-01 Optimization: Kick off both external API calls simultaneously in parallel threads
+        CompletableFuture<List<String>> imageGenerationTask = CompletableFuture.supplyAsync(() -> 
+            callReplicateImageGeneration(request)
+        );
+
+        CompletableFuture<List<String>> itemIdentificationTask = CompletableFuture.supplyAsync(() -> 
+            callClaudeItemIdentification(request)
+        );
+
+        // Combine tasks and apply a strict cumulative timeout budget
+        // We set the timeout to 8.5 seconds to leave a 1.5-second buffer for 4G network transit
+        try {
+            return CompletableFuture.allOf(imageGenerationTask, itemIdentificationTask)
+                .thenApply(v -> {
+                    List<String> previewUrls = imageGenerationTask.join();
+                    List<String> identifiedItems = itemIdentificationTask.join();
+                    return new DecorationResponse(previewUrls, identifiedItems);
+                })
+                .get(8500, TimeUnit.MILLISECONDS); // Hard cutoff at 8.5 seconds
+
+        } catch (Exception e) {
+            // NFR-01 Fallback Handling: If APIs timeout or crash, return a graceful, instant degradation response
+            // This prevents the mobile client connection from stalling out on a 4G network
+            List<String> fallbackUrls = new ArrayList<>();
+            fallbackUrls.add("https://cdn.decorai.com/placeholders/timeout_preview.png"); 
+            
+            List<String> fallbackItems = new ArrayList<>();
+            fallbackItems.add("Unable to extract items in real-time. Please check your network connection.");
+
+            return new DecorationResponse(fallbackUrls, fallbackItems);
+        }
+    }
+
+    private List<String> callReplicateImageGeneration(DecorationRequest request) {
+        // Mocking the HTTP request to Stable Diffusion / Replicate API using inpainting
+        // This runs concurrently with the Claude pipeline to shave off 4–6 seconds of runtime
+        try { Thread.sleep(4000); } catch (InterruptedException e) {} // Simulating API latency
+        List<String> urls = new ArrayList<>();
+        urls.add("https://api.replicate.delivery/pbxt/example1.png"); // Style variant 1
+        urls.add("https://api.replicate.delivery/pbxt/example2.png"); // Style variant 2
+        return urls;
+    }
+
+    private List<String> callClaudeItemIdentification(DecorationRequest request) {
+        // Mocking the HTTP request to Claude API for item identification
+        try { Thread.sleep(3500); } catch (InterruptedException e) {} // Simulating API latency
+        List<String> items = new ArrayList<>();
+        items.add("Organza Fabric Drapes");
+        items.add("White Roses Centerpiece");
+        return items;
+    }
+}
+
+     
