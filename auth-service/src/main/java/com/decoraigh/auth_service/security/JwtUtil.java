@@ -11,7 +11,8 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private final String SECRET = "decoraigh-secret-key-2026-secure-backend";
+    private final Key key =Keys.hmacShaKeyFor(SECRET.getBytes());
     private final long EXPIRATION_TIME = 86400000; // 24 hours
 
     public String generateToken(String email, String role) {
